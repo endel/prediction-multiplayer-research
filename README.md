@@ -1,5 +1,7 @@
 # Client-Side Prediction Research
 
+> **Disclaimer:** This content has been "vibe-researched" -- it was generated with the assistance of AI agents performing web research and synthesis. While efforts were made to fetch and cross-reference primary sources, details may be inaccurate, outdated, or misrepresented. Always verify against the original references linked throughout before relying on any technical claims.
+
 A comprehensive reference of practical approaches to client-side prediction in networked games and real-time applications. Each topic has an in-depth deep-dive document with implementation details and code examples.
 
 ## Table of Contents
