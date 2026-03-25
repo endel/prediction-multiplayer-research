@@ -54,6 +54,7 @@ Deep-dive: [Dead Reckoning & DIS Standard](dead-reckoning-dis.md) | [GGPO & Roll
 | Mirror | [mirror-networking.md](mirror-networking.md) | PredictedRigidbody with delta reapplication (no Physics.Simulate) | Experimental |
 | FishNet | [fishnet.md](fishnet.md) | Replicate/Reconcile method pattern with state forwarding | Yes |
 | Coherence | [coherence.md](coherence.md) | State-based prediction OR GGPO-style rollback (two models) | Yes (state); experimental (rollback) |
+| SnapNet | [snapnet.md](snapnet.md) | Full CSP with automatic rollback + lag compensation (multi-engine) | Yes |
 | Colyseus | [colyseus.md](colyseus.md) | Manual (shared logic + reconciliation pattern) | No (planned) |
 
 ---
@@ -74,20 +75,20 @@ Deep-dive: [Dead Reckoning & DIS Standard](dead-reckoning-dis.md) | [GGPO & Roll
 
 ### Framework Comparison: Architecture & Prediction
 
-| | Unity NGO | Unreal Engine | Godot | Photon Fusion | Mirror | FishNet | Coherence | Colyseus |
-|---|---|---|---|---|---|---|---|---|
-| **Language** | C# | C++ | GDScript/C# | C# | C# | C# | C# | TypeScript |
-| **Platform** | Unity | Unreal | Godot | Unity | Unity | Unity | Unity | Any (Node.js) |
-| **Authority** | Server | Server | Server | Server/Host/Shared | Server | Server | Server/Client/Hybrid | Server |
-| **Sync Model** | State replication | Property replication + RPCs | Property replication | State snapshots | SyncVars + RPCs | State + RPCs | State replication | Schema delta patches |
-| **Tick System** | NetworkTime | Fixed tick | No fixed net tick | Fixed network tick | Server tick | Fixed tick (TimeManager) | Fixed simulation frame | patchRate interval |
-| **Prediction** | Anticipation (no replay) | CMC replay + GAS keys | None built-in | Full CSP + resimulation | Delta reapplication | Replicate + Reconcile | State-based OR GGPO rollback | Manual implementation |
-| **Reconciliation** | Snap or Smooth | Snap + replay pending moves | N/A | Automatic resimulation | History correction + smoothing | Snap + input replay | Snap/Blend or full rollback | Snap + replay pending inputs |
-| **Lag Compensation** | No | No (manual via GAS) | No | Yes (hitbox history, sub-tick) | No | No | No | No |
-| **Rollback** | No | Experimental (NP Plugin) | Via addons (Netfox, GGPO) | Yes (automatic) | No (delta reapplication) | Yes (via Reconcile) | Yes (GGPO path) | No |
-| **Determinism Required** | No | Only for NP Plugin | Only for rollback addons | No | No | No | Only for GGPO path | No |
-| **Physics Prediction** | No | CMC only; NP broken | Via addons | Yes | PredictedRigidbody | PredictionRigidbody | No (Unity physics prohibited in GGPO) | No |
-| **Production Ready** | Yes | Yes (CMC/GAS); No (NP) | Addons vary | Yes | Experimental | Yes | Yes (state); No (GGPO) | Yes (manual pattern) |
+| | Unity NGO | Unreal Engine | Godot | Photon Fusion | Mirror | FishNet | Coherence | SnapNet | Colyseus |
+|---|---|---|---|---|---|---|---|---|---|
+| **Language** | C# | C++ | GDScript/C# | C# | C# | C# | C# | C/C++ (+ C# / Blueprints) | TypeScript |
+| **Platform** | Unity | Unreal | Godot | Unity | Unity | Unity | Unity | Unreal, Unity, Custom (C API) | Any (Node.js) |
+| **Authority** | Server | Server | Server | Server/Host/Shared | Server | Server | Server/Client/Hybrid | Server | Server |
+| **Sync Model** | State replication | Property replication + RPCs | Property replication | State snapshots | SyncVars + RPCs | State + RPCs | State replication | Snapshot + delta (FSnapNetProperty) | Schema delta patches |
+| **Tick System** | NetworkTime | Fixed tick | No fixed net tick | Fixed network tick | Server tick | Fixed tick (TimeManager) | Fixed simulation frame | Fixed tick (multi-world) | patchRate interval |
+| **Prediction** | Anticipation (no replay) | CMC replay + GAS keys | None built-in | Full CSP + resimulation | Delta reapplication | Replicate + Reconcile | State-based OR GGPO rollback | Full CSP + automatic rollback | Manual implementation |
+| **Reconciliation** | Snap or Smooth | Snap + replay pending moves | N/A | Automatic resimulation | History correction + smoothing | Snap + input replay | Snap/Blend or full rollback | Automatic rewind-resimulate-repredict | Snap + replay pending inputs |
+| **Lag Compensation** | No | No (manual via GAS) | No | Yes (hitbox history, sub-tick) | No | No | No | Yes (full entity rewind) | No |
+| **Rollback** | No | Experimental (NP Plugin) | Via addons (Netfox, GGPO) | Yes (automatic) | No (delta reapplication) | Yes (via Reconcile) | Yes (GGPO path) | Yes (automatic, multi-world) | No |
+| **Determinism Required** | No | Only for NP Plugin | Only for rollback addons | No | No | No | Only for GGPO path | No | No |
+| **Physics Prediction** | No | CMC only; NP broken | Via addons | Yes | PredictedRigidbody | PredictionRigidbody | No (Unity physics prohibited in GGPO) | Yes (separate simulation world) | No |
+| **Production Ready** | Yes | Yes (CMC/GAS); No (NP) | Addons vary | Yes | Experimental | Yes | Yes (state); No (GGPO) | Yes (commercial) | Yes (manual pattern) |
 
 ### Game Comparison: Networking Architecture
 
@@ -137,6 +138,4 @@ Deep-dive: [Dead Reckoning & DIS Standard](dead-reckoning-dis.md) | [GGPO & Roll
 - [Game Networking Resources -- ThusWroteNomad](https://github.com/ThusWroteNomad/GameNetworkingResources)
 - [Multiplayer Networking Resources](https://multiplayernetworking.com/)
 - [Web Game Dev: Prediction & Reconciliation](https://www.webgamedev.com/backend/prediction-reconciliation)
-- [SnapNet: Netcode Architectures Part 1 -- Lockstep](https://www.snapnet.dev/blog/netcode-architectures-part-1-lockstep/)
-- [SnapNet: Netcode Architectures Part 2 -- Rollback](https://www.snapnet.dev/blog/netcode-architectures-part-2-rollback/)
 - [CrystalOrb (Rust rollback library)](https://github.com/ernwong/crystalorb)
