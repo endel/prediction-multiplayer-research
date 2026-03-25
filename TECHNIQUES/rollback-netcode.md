@@ -1,6 +1,5 @@
 # Rollback Netcode (GGPO-Style): A General Technique Deep-Dive
 
-> **Disclaimer:** This content has been "vibe-researched" -- it was generated with the assistance of AI agents performing web research and synthesis. While efforts were made to fetch and cross-reference primary sources, details may be inaccurate, outdated, or misrepresented. Always verify against the original references linked throughout before relying on any technical claims.
 
 > **See also:** For GGPO-specific API details, fighting game history, and the GGPO library in particular, see [GGPO & Rollback in Fighting Games](../ggpo-rollback.md).
 

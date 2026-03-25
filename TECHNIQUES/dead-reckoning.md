@@ -1,6 +1,5 @@
 # Dead Reckoning for Game Developers
 
-> **Disclaimer:** This content has been "vibe-researched" -- it was generated with the assistance of AI agents performing web research and synthesis. While efforts were made to fetch and cross-reference primary sources, details may be inaccurate, outdated, or misrepresented. Always verify against the original references linked throughout before relying on any technical claims.
 
 > For the military simulation and IEEE 1278 DIS Standard perspective on dead reckoning, see the companion document: [Dead Reckoning & DIS Standard](../dead-reckoning-dis.md).
 
