@@ -1,0 +1,140 @@
+# Client-Side Prediction Research
+
+A comprehensive reference of practical approaches to client-side prediction in networked games and real-time applications. Each topic has an in-depth deep-dive document with implementation details and code examples.
+
+## Table of Contents
+
+1. [Foundational Literature](#foundational-literature)
+2. [Techniques at a Glance](#techniques-at-a-glance)
+3. [Game Engine & Framework Implementations](#game-engine--framework-implementations)
+4. [Shipped Game Case Studies](#shipped-game-case-studies)
+5. [Comparison Tables](#comparison-tables)
+6. [Curated Resource Lists](#curated-resource-lists)
+
+---
+
+## Foundational Literature
+
+| Document | Author / Origin | Year | Key Contribution |
+|----------|----------------|------|-----------------|
+| [Valve Source Engine](valve-source-engine.md) | Yahn Bernier / Valve | 2001 | The four pillars: prediction, reconciliation, interpolation, lag compensation |
+| [Quake / id Software](quake-id-software.md) | John Carmack | 1996 | Introduced client-side prediction to FPS (QuakeWorld) |
+| [Fast-Paced Multiplayer](gabriel-gambetta.md) | Gabriel Gambetta | 2014 | Most-referenced tutorial series with live demos |
+| [Gaffer on Games](glenn-fiedler-gaffer-on-games.md) | Glenn Fiedler | 2014-2018 | Lockstep, snapshot interpolation, state sync, priority accumulators |
+| [1500 Archers on a 28.8](age-of-empires.md) | Bettner & Terrano | 2001 | Deterministic lockstep for RTS (Age of Empires) |
+
+---
+
+## Techniques at a Glance
+
+| Technique | What it Does | Best For | Trade-off |
+|-----------|-------------|----------|-----------|
+| **Client-Side Prediction + Reconciliation** | Client applies input locally, replays unacknowledged inputs on server correction | FPS, action games | Complexity; occasional visual snaps |
+| **Entity Interpolation** | Renders remote entities between two past server snapshots | All multiplayer games | ~100ms visual delay for remote entities |
+| **Dead Reckoning** | Extrapolates position from last known velocity/acceleration | Military sims, vehicles, MMOs | Fails on unpredictable motion |
+| **Rollback Netcode** | Saves state, predicts remote inputs, resimulates on misprediction | Fighting games, competitive action | CPU cost; requires determinism + fast serialization |
+| **Deterministic Lockstep** | All peers run identical simulation from shared inputs | RTS, turn-based | Requires perfect determinism; pauses on slow peers |
+| **Snapshot Interpolation** | Client buffers and interpolates full server snapshots | Spectators, simple games | High bandwidth or high latency (10pps=350ms, 60pps=85ms) |
+| **Lag Compensation (Rewinding)** | Server rewinds world to shooter's timestamp for hit detection | FPS with hitscan weapons | "Shot behind walls" from target's perspective |
+
+Deep-dive: [Dead Reckoning & DIS Standard](dead-reckoning-dis.md) | [GGPO & Rollback Netcode](ggpo-rollback.md)
+
+---
+
+## Game Engine & Framework Implementations
+
+| Framework | Deep-Dive | Prediction Model | Built-in? |
+|-----------|-----------|-----------------|-----------|
+| Unity Netcode (NGO) | [unity-ngo.md](unity-ngo.md) | Client Anticipation (snap/blend, no replay) | Partial |
+| Unreal Engine | [unreal-engine.md](unreal-engine.md) | CMC prediction + GAS PredictionKey + Network Prediction Plugin | Yes (movement); experimental (general) |
+| Godot | [godot.md](godot.md) | None built-in; community addons (Netfox, Rollback Netcode, MonkeNet) | No |
+| Photon Fusion | [photon-fusion.md](photon-fusion.md) | Full CSP with automatic resimulation + sub-tick lag compensation | Yes |
+| Mirror | [mirror-networking.md](mirror-networking.md) | PredictedRigidbody with delta reapplication (no Physics.Simulate) | Experimental |
+| FishNet | [fishnet.md](fishnet.md) | Replicate/Reconcile method pattern with state forwarding | Yes |
+| Coherence | [coherence.md](coherence.md) | State-based prediction OR GGPO-style rollback (two models) | Yes (state); experimental (rollback) |
+| Colyseus | [colyseus.md](colyseus.md) | Manual (shared logic + reconciliation pattern) | No (planned) |
+
+---
+
+## Shipped Game Case Studies
+
+| Game | Deep-Dive | Studio | Architecture | Key Innovation |
+|------|-----------|--------|-------------|---------------|
+| Overwatch | [overwatch.md](overwatch.md) | Blizzard | Server-authoritative, 62.5 Hz | ECS enabling prediction + replay; predicted projectiles |
+| Rocket League | [rocket-league.md](rocket-league.md) | Psyonix | Server-authoritative, 60 Hz | Bullet Physics rollback; all objects predicted (not interpolated) |
+| Halo: Reach | [halo-reach.md](halo-reach.md) | Bungie | Host-authoritative | Target-relative gunshots; bandwidth reduced to 20% of Halo 3 |
+| For Honor | [for-honor.md](for-honor.md) | Ubisoft | P2P deterministic lockstep | "Time travel" rollback; zero state traffic; deterministic AI |
+| Valorant | [valorant.md](valorant.md) | Riot Games | Server-authoritative, 128 Hz | Peeker's advantage formula; Riot Direct backbone |
+
+---
+
+## Comparison Tables
+
+### Framework Comparison: Architecture & Prediction
+
+| | Unity NGO | Unreal Engine | Godot | Photon Fusion | Mirror | FishNet | Coherence | Colyseus |
+|---|---|---|---|---|---|---|---|---|
+| **Language** | C# | C++ | GDScript/C# | C# | C# | C# | C# | TypeScript |
+| **Platform** | Unity | Unreal | Godot | Unity | Unity | Unity | Unity | Any (Node.js) |
+| **Authority** | Server | Server | Server | Server/Host/Shared | Server | Server | Server/Client/Hybrid | Server |
+| **Sync Model** | State replication | Property replication + RPCs | Property replication | State snapshots | SyncVars + RPCs | State + RPCs | State replication | Schema delta patches |
+| **Tick System** | NetworkTime | Fixed tick | No fixed net tick | Fixed network tick | Server tick | Fixed tick (TimeManager) | Fixed simulation frame | patchRate interval |
+| **Prediction** | Anticipation (no replay) | CMC replay + GAS keys | None built-in | Full CSP + resimulation | Delta reapplication | Replicate + Reconcile | State-based OR GGPO rollback | Manual implementation |
+| **Reconciliation** | Snap or Smooth | Snap + replay pending moves | N/A | Automatic resimulation | History correction + smoothing | Snap + input replay | Snap/Blend or full rollback | Snap + replay pending inputs |
+| **Lag Compensation** | No | No (manual via GAS) | No | Yes (hitbox history, sub-tick) | No | No | No | No |
+| **Rollback** | No | Experimental (NP Plugin) | Via addons (Netfox, GGPO) | Yes (automatic) | No (delta reapplication) | Yes (via Reconcile) | Yes (GGPO path) | No |
+| **Determinism Required** | No | Only for NP Plugin | Only for rollback addons | No | No | No | Only for GGPO path | No |
+| **Physics Prediction** | No | CMC only; NP broken | Via addons | Yes | PredictedRigidbody | PredictionRigidbody | No (Unity physics prohibited in GGPO) | No |
+| **Production Ready** | Yes | Yes (CMC/GAS); No (NP) | Addons vary | Yes | Experimental | Yes | Yes (state); No (GGPO) | Yes (manual pattern) |
+
+### Game Comparison: Networking Architecture
+
+| | Overwatch | Rocket League | Halo: Reach | For Honor | Valorant |
+|---|---|---|---|---|---|
+| **Tick Rate** | 62.5 Hz | 60 Hz | 30 Hz (variable) | Deterministic step | 128 Hz |
+| **Architecture** | Client-Server | Client-Server | Host-Client (P2P) | P2P Lockstep → Dedicated relay | Client-Server |
+| **Authority** | Server | Server | Host | All peers (deterministic) | Server |
+| **Local Player** | Predicted | Predicted | Predicted | Deterministic (local input immediate) | Predicted |
+| **Remote Players** | Interpolated | Predicted (with decay) | Interpolated | Deterministic (rollback on late input) | Interpolated |
+| **Projectiles** | Predicted (slow); server (fast) | Predicted | Host-authoritative | Deterministic | Server-authoritative |
+| **Hit Registration** | Favor-the-shooter + rewind | Server validates | Target-relative + host validates | Deterministic (identical on all peers) | Rewind with distance limits |
+| **Reconciliation** | Snap + replay | Physics rollback + resimulation | Host correction + smoothing | Rollback + resimulation ("time travel") | Snap (corrections rare) |
+| **Correction Smoothing** | Component-level visual blend | Visual offset decay (lerp/slerp) | Network smoothing mode | Resimulation within budget | Only affects mispredicting player |
+| **Bandwidth Strategy** | Delta compression | 60 Hz full state | Priority accumulator (20% of Halo 3) | Zero state traffic (inputs only) | Delta compression + Riot Direct |
+
+### Technique Comparison: When to Use What
+
+| Technique | Latency Feel | Bandwidth | CPU Cost | Complexity | Determinism Required | Best Genre |
+|-----------|-------------|-----------|----------|------------|---------------------|-----------|
+| **CSP + Reconciliation** | Excellent (local input instant) | Medium (inputs + state) | Medium (replay N inputs) | High | No | FPS, action |
+| **Entity Interpolation** | Good (100ms delay for remotes) | Medium (snapshots) | Low | Low | No | All games (for remote entities) |
+| **Dead Reckoning** | Variable (good for smooth motion) | Low (threshold updates) | Low | Medium | No | Vehicles, MMOs, military sims |
+| **Rollback (GGPO)** | Excellent (zero input delay) | Low (inputs only) | High (resimulate N frames) | Very High | Yes | Fighting, competitive action |
+| **Deterministic Lockstep** | Sluggish (input delay = RTT) | Very Low (inputs only) | Low | High (determinism) | Yes | RTS, turn-based |
+| **Snapshot Interpolation** | Poor-Medium (85-350ms) | High (full snapshots) | Very Low | Low | No | Spectating, casual |
+| **Lag Compensation** | N/A (server-side) | None (server process) | Medium (rewind + test) | Medium | No | FPS (hit detection) |
+
+### Decision Matrix: Choosing an Approach
+
+| Your Game Type | Recommended Primary Technique | Complement With | Example |
+|---------------|------------------------------|----------------|---------|
+| **Competitive FPS** | CSP + Reconciliation | Lag Compensation + Entity Interpolation | Valorant, CS2, Overwatch |
+| **Physics-based competitive** | CSP + Physics Rollback | Entity Prediction (all objects) | Rocket League |
+| **Fighting game** | Rollback (GGPO-style) | Input delay (hybrid) | Guilty Gear Strive, SF6 |
+| **RTS (many units)** | Deterministic Lockstep | Checksums | Age of Empires, StarCraft |
+| **Co-op / casual** | Snapshot Interpolation | Entity Interpolation | Many indie games |
+| **MMO / large world** | Dead Reckoning | Entity Interpolation | World of Warcraft |
+| **Melee action (P2P)** | Deterministic Lockstep + Rollback | Deterministic AI | For Honor |
+| **Mobile / web** | CSP + Reconciliation (manual) | Delta compression | Colyseus-based games |
+
+---
+
+## Curated Resource Lists
+
+- [Awesome Game Networking (GitHub)](https://github.com/rumaniel/Awesome-Game-Networking)
+- [Game Networking Resources -- ThusWroteNomad](https://github.com/ThusWroteNomad/GameNetworkingResources)
+- [Multiplayer Networking Resources](https://multiplayernetworking.com/)
+- [Web Game Dev: Prediction & Reconciliation](https://www.webgamedev.com/backend/prediction-reconciliation)
+- [SnapNet: Netcode Architectures Part 1 -- Lockstep](https://www.snapnet.dev/blog/netcode-architectures-part-1-lockstep/)
+- [SnapNet: Netcode Architectures Part 2 -- Rollback](https://www.snapnet.dev/blog/netcode-architectures-part-2-rollback/)
+- [CrystalOrb (Rust rollback library)](https://github.com/ernwong/crystalorb)
