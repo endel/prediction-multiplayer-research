@@ -10,8 +10,9 @@ A comprehensive reference of practical approaches to client-side prediction in n
 2. [Techniques at a Glance](#techniques-at-a-glance)
 3. [Game Engine & Framework Implementations](#game-engine--framework-implementations)
 4. [Shipped Game Case Studies](#shipped-game-case-studies)
-5. [Comparison Tables](#comparison-tables)
-6. [Curated Resource Lists](#curated-resource-lists)
+5. [MMO Case Studies](#mmo-case-studies)
+6. [Comparison Tables](#comparison-tables)
+7. [Curated Resource Lists](#curated-resource-lists)
 
 ---
 
@@ -33,7 +34,7 @@ A comprehensive reference of practical approaches to client-side prediction in n
 |-----------|-------------|----------|-----------|
 | **[Client-Side Prediction + Reconciliation](TECHNIQUES/client-side-prediction-reconciliation.md)** | Client applies input locally, replays unacknowledged inputs on server correction | FPS, action games | Complexity; occasional visual snaps |
 | **[Entity Interpolation](TECHNIQUES/entity-interpolation.md)** | Renders remote entities between two past server snapshots | All multiplayer games | ~100ms visual delay for remote entities |
-| **[Dead Reckoning](TECHNIQUES/dead-reckoning.md)** | Extrapolates position from last known velocity/acceleration | Military sims, vehicles, MMOs | Fails on unpredictable motion |
+| **[Dead Reckoning](TECHNIQUES/dead-reckoning.md)** | Extrapolates position from last known velocity/acceleration | Military sims, vehicles, MMO remote entities | Fails on unpredictable motion |
 | **[Rollback Netcode](TECHNIQUES/rollback-netcode.md)** | Saves state, predicts remote inputs, resimulates on misprediction | Fighting games, competitive action | CPU cost; requires determinism + fast serialization |
 | **[Deterministic Lockstep](TECHNIQUES/deterministic-lockstep.md)** | All peers run identical simulation from shared inputs | RTS, turn-based | Requires perfect determinism; pauses on slow peers |
 | **[Snapshot Interpolation](TECHNIQUES/snapshot-interpolation.md)** | Client buffers and interpolates full server snapshots | Spectators, simple games | High bandwidth or high latency (10pps=350ms, 60pps=85ms) |
@@ -66,6 +67,23 @@ A comprehensive reference of practical approaches to client-side prediction in n
 | Halo: Reach | [halo-reach.md](halo-reach.md) | Bungie | Host-authoritative | Target-relative gunshots; bandwidth reduced to 20% of Halo 3 |
 | For Honor | [for-honor.md](for-honor.md) | Ubisoft | P2P deterministic lockstep | "Time travel" rollback; zero state traffic; deterministic AI |
 | Valorant | [valorant.md](valorant.md) | Riot Games | Server-authoritative, 128 Hz | Peeker's advantage formula; Riot Direct backbone |
+
+---
+
+## MMO Case Studies
+
+> MMOs face a fundamentally different networking challenge than action/competitive games. With hundreds or thousands of players per zone, traditional techniques like rollback and lag compensation become computationally infeasible. Most MMOs instead **design their gameplay around network limitations** — using client-authoritative movement, target-locked combat, animation masking, and creative latency tolerance rather than trying to eliminate lag.
+
+| Game | Deep-Dive | Studio | Architecture | Key Innovation |
+|------|-----------|--------|-------------|---------------|
+| World of Warcraft | [MMO/world-of-warcraft.md](MMO/world-of-warcraft.md) | Blizzard | Hybrid authority, TCP, ~20-50 Hz | Client-auth movement; spell batching (400ms→10ms); melee leeway |
+| Final Fantasy XIV | [MMO/final-fantasy-xiv.md](MMO/final-fantasy-xiv.md) | Square Enix | TCP-only, ~3.3 Hz position tick | Slidecast tolerance; snapshot AoE; game design shaped around netcode |
+| Guild Wars 2 | [MMO/guild-wars-2.md](MMO/guild-wars-2.md) | ArenaNet | TCP, hybrid authority, ~20-30 Hz | Animation fast-forwarding; 5-target AoE cap as networking constraint |
+| Guild Wars 1 | [MMO/guild-wars-1.md](MMO/guild-wars-1.md) | ArenaNet | TCP-only, server-auth, instanced | Zero-downtime rolling upgrades; animation-length latency masking |
+| EVE Online | [MMO/eve-online.md](MMO/eve-online.md) | CCP Games | Single-shard, server-auth, 1 Hz | Time Dilation (TiDi) scales simulation to 10% for 6000+ player battles |
+| Elder Scrolls Online | [MMO/elder-scrolls-online.md](MMO/elder-scrolls-online.md) | ZeniMax Online | TCP megaserver, ~60 Hz | Megaserver dynamic instancing; AoE message batching for Cyrodiil PvP |
+| Black Desert Online | [MMO/black-desert-online.md](MMO/black-desert-online.md) | Pearl Abyss | Server-auth, ~25-30 Hz, seamless | Aggressive client prediction for action combat; accepts desync as tradeoff |
+| New World | [MMO/new-world.md](MMO/new-world.md) | Amazon Games | Server-auth on AWS (EC2/DynamoDB) | Hub-based zone grid; 800K DynamoDB writes/30s |
 
 ---
 
@@ -103,6 +121,21 @@ A comprehensive reference of practical approaches to client-side prediction in n
 | **Correction Smoothing** | Component-level visual blend | Visual offset decay (lerp/slerp) | Network smoothing mode | Resimulation within budget | Only affects mispredicting player |
 | **Bandwidth Strategy** | Delta compression | 60 Hz full state | Priority accumulator (20% of Halo 3) | Zero state traffic (inputs only) | Delta compression + Riot Direct |
 
+### MMO Comparison: Networking Architecture
+
+| | WoW | FFXIV | GW2 | GW1 | EVE Online | ESO | BDO | New World |
+|---|---|---|---|---|---|---|---|---|
+| **Tick Rate** | ~20-50 Hz (was ~2.5 Hz in 2004) | ~3.3 Hz (position) | ~20-30 Hz (estimated) | Event-driven (TCP) | 1 Hz | ~60 Hz (estimated) | ~25-30 Hz (estimated) | Undisclosed |
+| **Architecture** | Zone-partitioned (JAM routing) | Client-Server (TCP only) | Client-Server (TCP, microservices) | Instanced (18 server types) | Single-shard cluster | TCP megaserver | Seamless open-world | AWS EC2 hubs + DynamoDB |
+| **Movement Authority** | Client | Client | Client-trusted | Server | Server | Hybrid | Server (client predicts) | Server |
+| **Combat Authority** | Server | Server | Server | Server | Server | Server | Server | Server |
+| **Remote Players** | Dead reckoning | Low-freq updates + smoothing | Dead reckoning | Server-confirmed (no DR) | Dead reckoning (1 Hz) | Server-confirmed | Client-predicted | Server-confirmed |
+| **Hit Registration** | Target-locked + melee leeway | Position snapshot at cast end | Server-side (no rewind) | Server-side range/LoS | Formula-based (no hitboxes) | Server-side AoE checks | Client predicts; server resolves | Server-side hit volumes |
+| **Latency Masking** | Spell Queue Window; spell batching | Slidecast window; animation lock | Animation fast-forwarding | Two-stage commit (animation > RTT) | TiDi (slow sim under load) | AoE message batching | Instant client feedback | Standard |
+| **Scale** | 100s open world (sharded) | 100s (instanced raids) | 100+ WvW (degrades) | 16 PvP / 150 PvE | 6000+ (under TiDi) | ~600 Cyrodiil | ~300+ siege | ~2500 per world |
+| **Transport** | TCP | TCP | TCP | TCP | TCP (optimized) | TCP | Undisclosed | Custom (GridMate) |
+| **Key Limitation** | Client-auth movement → cheats | 3.3 Hz position → ghost AoE hits | Single-threaded → WvW skill lag | No DR → visible remote latency | 1 Hz → sluggish feel | TCP HOL blocking in PvP | Desync inherent in design | Launch exploit controversies |
+
 ### Technique Comparison: When to Use What
 
 | Technique | Latency Feel | Bandwidth | CPU Cost | Complexity | Determinism Required | Best Genre |
@@ -124,7 +157,8 @@ A comprehensive reference of practical approaches to client-side prediction in n
 | **Fighting game** | Rollback (GGPO-style) | Input delay (hybrid) | Guilty Gear Strive, SF6 |
 | **RTS (many units)** | Deterministic Lockstep | Checksums | Age of Empires, StarCraft |
 | **Co-op / casual** | Snapshot Interpolation | Entity Interpolation | Many indie games |
-| **MMO / large world** | Dead Reckoning | Entity Interpolation | World of Warcraft |
+| **MMO (tab-target)** | Client-auth movement + server-auth combat | Dead reckoning (remotes) + latency masking (animations, spell queue) | World of Warcraft, FFXIV, ESO |
+| **MMO (action combat)** | Server-auth + aggressive client prediction | Accept desync as tradeoff; AoE caps for scale | Black Desert Online, New World, GW2 |
 | **Melee action (P2P)** | Deterministic Lockstep + Rollback | Deterministic AI | For Honor |
 | **Mobile / web** | CSP + Reconciliation (manual) | Delta compression | Colyseus-based games |
 
