@@ -31,15 +31,13 @@ A comprehensive reference of practical approaches to client-side prediction in n
 
 | Technique | What it Does | Best For | Trade-off |
 |-----------|-------------|----------|-----------|
-| **Client-Side Prediction + Reconciliation** | Client applies input locally, replays unacknowledged inputs on server correction | FPS, action games | Complexity; occasional visual snaps |
-| **Entity Interpolation** | Renders remote entities between two past server snapshots | All multiplayer games | ~100ms visual delay for remote entities |
-| **Dead Reckoning** | Extrapolates position from last known velocity/acceleration | Military sims, vehicles, MMOs | Fails on unpredictable motion |
-| **Rollback Netcode** | Saves state, predicts remote inputs, resimulates on misprediction | Fighting games, competitive action | CPU cost; requires determinism + fast serialization |
-| **Deterministic Lockstep** | All peers run identical simulation from shared inputs | RTS, turn-based | Requires perfect determinism; pauses on slow peers |
-| **Snapshot Interpolation** | Client buffers and interpolates full server snapshots | Spectators, simple games | High bandwidth or high latency (10pps=350ms, 60pps=85ms) |
-| **Lag Compensation (Rewinding)** | Server rewinds world to shooter's timestamp for hit detection | FPS with hitscan weapons | "Shot behind walls" from target's perspective |
-
-Deep-dive: [Dead Reckoning & DIS Standard](dead-reckoning-dis.md) | [GGPO & Rollback Netcode](ggpo-rollback.md)
+| **[Client-Side Prediction + Reconciliation](TECHNIQUES/client-side-prediction-reconciliation.md)** | Client applies input locally, replays unacknowledged inputs on server correction | FPS, action games | Complexity; occasional visual snaps |
+| **[Entity Interpolation](TECHNIQUES/entity-interpolation.md)** | Renders remote entities between two past server snapshots | All multiplayer games | ~100ms visual delay for remote entities |
+| **[Dead Reckoning](TECHNIQUES/dead-reckoning.md)** | Extrapolates position from last known velocity/acceleration | Military sims, vehicles, MMOs | Fails on unpredictable motion |
+| **[Rollback Netcode](TECHNIQUES/rollback-netcode.md)** | Saves state, predicts remote inputs, resimulates on misprediction | Fighting games, competitive action | CPU cost; requires determinism + fast serialization |
+| **[Deterministic Lockstep](TECHNIQUES/deterministic-lockstep.md)** | All peers run identical simulation from shared inputs | RTS, turn-based | Requires perfect determinism; pauses on slow peers |
+| **[Snapshot Interpolation](TECHNIQUES/snapshot-interpolation.md)** | Client buffers and interpolates full server snapshots | Spectators, simple games | High bandwidth or high latency (10pps=350ms, 60pps=85ms) |
+| **[Lag Compensation (Rewinding)](TECHNIQUES/lag-compensation.md)** | Server rewinds world to shooter's timestamp for hit detection | FPS with hitscan weapons | "Shot behind walls" from target's perspective |
 
 ---
 
@@ -109,13 +107,13 @@ Deep-dive: [Dead Reckoning & DIS Standard](dead-reckoning-dis.md) | [GGPO & Roll
 
 | Technique | Latency Feel | Bandwidth | CPU Cost | Complexity | Determinism Required | Best Genre |
 |-----------|-------------|-----------|----------|------------|---------------------|-----------|
-| **CSP + Reconciliation** | Excellent (local input instant) | Medium (inputs + state) | Medium (replay N inputs) | High | No | FPS, action |
-| **Entity Interpolation** | Good (100ms delay for remotes) | Medium (snapshots) | Low | Low | No | All games (for remote entities) |
-| **Dead Reckoning** | Variable (good for smooth motion) | Low (threshold updates) | Low | Medium | No | Vehicles, MMOs, military sims |
-| **Rollback (GGPO)** | Excellent (zero input delay) | Low (inputs only) | High (resimulate N frames) | Very High | Yes | Fighting, competitive action |
-| **Deterministic Lockstep** | Sluggish (input delay = RTT) | Very Low (inputs only) | Low | High (determinism) | Yes | RTS, turn-based |
-| **Snapshot Interpolation** | Poor-Medium (85-350ms) | High (full snapshots) | Very Low | Low | No | Spectating, casual |
-| **Lag Compensation** | N/A (server-side) | None (server process) | Medium (rewind + test) | Medium | No | FPS (hit detection) |
+| **[CSP + Reconciliation](TECHNIQUES/client-side-prediction-reconciliation.md)** | Excellent (local input instant) | Medium (inputs + state) | Medium (replay N inputs) | High | No | FPS, action |
+| **[Entity Interpolation](TECHNIQUES/entity-interpolation.md)** | Good (100ms delay for remotes) | Medium (snapshots) | Low | Low | No | All games (for remote entities) |
+| **[Dead Reckoning](TECHNIQUES/dead-reckoning.md)** | Variable (good for smooth motion) | Low (threshold updates) | Low | Medium | No | Vehicles, MMOs, military sims |
+| **[Rollback (GGPO)](TECHNIQUES/rollback-netcode.md)** | Excellent (zero input delay) | Low (inputs only) | High (resimulate N frames) | Very High | Yes | Fighting, competitive action |
+| **[Deterministic Lockstep](TECHNIQUES/deterministic-lockstep.md)** | Sluggish (input delay = RTT) | Very Low (inputs only) | Low | High (determinism) | Yes | RTS, turn-based |
+| **[Snapshot Interpolation](TECHNIQUES/snapshot-interpolation.md)** | Poor-Medium (85-350ms) | High (full snapshots) | Very Low | Low | No | Spectating, casual |
+| **[Lag Compensation](TECHNIQUES/lag-compensation.md)** | N/A (server-side) | None (server process) | Medium (rewind + test) | Medium | No | FPS (hit detection) |
 
 ### Decision Matrix: Choosing an Approach
 
